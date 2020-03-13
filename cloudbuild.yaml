@@ -1,0 +1,46 @@
+---
+steps:
+
+  # Build the jar
+  - name: 'gcr.io/cloud-builders/gradle:5.6.2-jdk-8'
+    id: 'build_jar'
+    args:
+      - 'clean'
+      - 'assemble'
+    env:
+      - 'GRADLE_USER_HOME=/build_cache/.gradle'
+  # Build the Docker image
+  - name: &docker_version 'gcr.io/cloud-builders/docker:18.06.1'
+    id: build_docker_image
+    waitFor: ['build_jar']
+    args:
+      - 'build'
+      - '-t'
+      - &docker_image 'eu.gcr.io/$PROJECT_ID/$REPO_NAME-$BRANCH_NAME:$SHORT_SHA'
+      - '.'
+
+  # Push the Docker image
+  - name: *docker_version
+    id: push_docker_image
+    waitFor: ['build_docker_image']
+    args:
+      - 'push'
+      - *docker_image
+
+  # Tag the docker image as latest
+  - name: *docker_version
+    id: tag_docker_image_latest
+    waitFor: ['build_docker_image']
+    args:
+      - 'tag'
+      - *docker_image
+      - 'eu.gcr.io/$PROJECT_ID/$REPO_NAME-$BRANCH_NAME:latest'
+  # Push as latest
+  - name: *docker_version
+    id: push_docker_image_latest
+    waitFor: ['push_docker_image']
+    args:
+      - 'push'
+      - 'eu.gcr.io/$PROJECT_ID/$REPO_NAME-$BRANCH_NAME:latest'
+images:
+  - *docker_image
