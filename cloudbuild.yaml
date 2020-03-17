@@ -7,8 +7,6 @@ steps:
     args:
       - 'clean'
       - 'assemble'
-    env:
-      - 'GRADLE_USER_HOME=/build_cache/.gradle'
   # Build the Docker image
   - name: &docker_version 'gcr.io/cloud-builders/docker:18.06.1'
     id: build_docker_image
